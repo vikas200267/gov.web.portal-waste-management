@@ -8,6 +8,9 @@ import { Dashboard } from './components/dashboard/Dashboard';
 import { Analytics } from './components/analytics/Analytics';
 import { About } from './components/about/About';
 
+// Add a console log to check if the app is loading
+console.log('App component is loading...');
+
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   

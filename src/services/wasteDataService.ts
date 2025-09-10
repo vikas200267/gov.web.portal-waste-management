@@ -118,17 +118,47 @@ export const wasteDataService = {
   // Real-time Firebase listener for dashboard
   subscribeToRealtimeData(callback: (data: WasteData[]) => void): () => void {
     try {
-      const dataRef = ref(database, 'wasteData');
+      const dataRef = ref(database, 'waste_data');
       
       const unsubscribe = onValue(dataRef, (snapshot) => {
         if (snapshot.exists()) {
           const firebaseData = snapshot.val();
-          const formattedData: WasteData[] = Object.keys(firebaseData).map(key => ({
-            ...firebaseData[key],
-            id: key,
-            timestamp: new Date(firebaseData[key].timestamp),
-          }));
+          console.log("Firebase data structure:", firebaseData);
           
+          // Process the nested structure of your data
+          const formattedData: WasteData[] = [];
+          
+          // Process each location (Channasandra, Kengeri, etc.)
+          Object.keys(firebaseData).forEach(location => {
+            const locationData = firebaseData[location];
+            
+            // Process each type (organic, inorganic)
+            Object.keys(locationData).forEach(wasteType => {
+              const wasteTypeData = locationData[wasteType];
+              
+              // Process each entry in the waste type
+              Object.keys(wasteTypeData).forEach(entryId => {
+                const entry = wasteTypeData[entryId];
+                
+                // Create a properly formatted data entry
+                formattedData.push({
+                  id: entryId,
+                  timestamp: new Date(entry.timestamp.replace(' ', 'T')), // Convert to proper ISO format
+                  organicWeight: wasteType === 'organic' ? Number(entry.weight || 0) : 0,
+                  inorganicWeight: wasteType === 'inorganic' ? Number(entry.weight || 0) : 0,
+                  totalWeight: Number(entry.weight || 0),
+                  humidity: Number(entry.humidity || 0),
+                  temperature: Number(entry.temperature || 0),
+                  mq9: Number(entry.mq9 || 0),
+                  mq7: Number(entry.mq7 || 0),
+                  mq135: Number(entry.mq135 || 0),
+                  areaCode: location
+                });
+              });
+            });
+          });
+          
+          console.log("Formatted data:", formattedData);
           dashboardData = formattedData;
           callback(formattedData);
         } else {
