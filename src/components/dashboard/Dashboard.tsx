@@ -34,17 +34,49 @@ export const Dashboard: React.FC = () => {
   const avgHumidity = wasteData.length > 0 
     ? wasteData.reduce((sum, item) => sum + item.humidity, 0) / wasteData.length 
     : 0;
+  // Get average gas readings in ppm
+  const avgMethanePpm = wasteData.length > 0 
+    ? wasteData.reduce((sum, item) => sum + (item.methane || 0), 0) / wasteData.length 
+    : 0;
+  const avgAmmoniaPpm = wasteData.length > 0 
+    ? wasteData.reduce((sum, item) => sum + (item.ammonia || 0), 0) / wasteData.length 
+    : 0;
+  const avgSulfidePpm = wasteData.length > 0 
+    ? wasteData.reduce((sum, item) => sum + (item.sulfide || 0), 0) / wasteData.length 
+    : 0;
+  const avgBenzenePpm = wasteData.length > 0 
+    ? wasteData.reduce((sum, item) => sum + (item.benzene || 0), 0) / wasteData.length 
+    : 0;
+  const avgCarbonMonoxidePpm = wasteData.length > 0 
+    ? wasteData.reduce((sum, item) => sum + (item.carbonMonoxide || 0), 0) / wasteData.length 
+    : 0;
+  
+  // Convert to percentage based on typical maximum scales
+  // These scales represent typical dangerous levels for each gas
+  const maxMethanePpm = 500; // Max methane scale
+  const maxAmmoniaPpm = 300; // Max ammonia scale
+  const maxSulfidePpm = 200; // Max hydrogen sulfide scale
+  const maxBenzenePpm = 150; // Max benzene scale
+  const maxCarbonMonoxidePpm = 400; // Max CO scale
+  
+  // Calculate percentages based on typical max values
+  const methanePercentage = (avgMethanePpm / maxMethanePpm) * 100;
+  const ammoniaPercentage = (avgAmmoniaPpm / maxAmmoniaPpm) * 100;
+  const sulfidePercentage = (avgSulfidePpm / maxSulfidePpm) * 100;
+  const benzenePercentage = (avgBenzenePpm / maxBenzenePpm) * 100;
+  const carbonMonoxidePercentage = (avgCarbonMonoxidePpm / maxCarbonMonoxidePpm) * 100;
+
 
   const stats = [
     {
-      title: 'Total Organic Waste',
+      title: 'Total Wet Waste',
       value: `${totalOrganic.toFixed(1)} kg`,
       icon: TreePine,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
     },
     {
-      title: 'Total Inorganic Waste',
+      title: 'Total Dry Waste',
       value: `${totalInorganic.toFixed(1)} kg`,
       icon: Factory,
       color: 'bg-blue-500',
@@ -63,6 +95,42 @@ export const Dashboard: React.FC = () => {
       icon: Droplets,
       color: 'bg-cyan-500',
       bgColor: 'bg-cyan-50',
+    },
+
+    {
+      title: 'Methane',
+      value: `${methanePercentage.toFixed(1)}%`,
+      icon: Wind,
+      color: methanePercentage > 70 ? 'bg-red-500' : methanePercentage > 40 ? 'bg-yellow-500' : 'bg-green-500',
+      bgColor: methanePercentage > 70 ? 'bg-red-50' : methanePercentage > 40 ? 'bg-yellow-50' : 'bg-green-50',
+    },
+    {
+      title: 'Ammonia',
+      value: `${ammoniaPercentage.toFixed(1)}%`,
+      icon: Wind,
+      color: ammoniaPercentage > 70 ? 'bg-red-500' : ammoniaPercentage > 40 ? 'bg-yellow-500' : 'bg-green-500',
+      bgColor: ammoniaPercentage > 70 ? 'bg-red-50' : ammoniaPercentage > 40 ? 'bg-yellow-50' : 'bg-green-50',
+    },
+    {
+      title: 'Sulfide',
+      value: `${sulfidePercentage.toFixed(1)}%`,
+      icon: Wind,
+      color: sulfidePercentage > 70 ? 'bg-red-500' : sulfidePercentage > 40 ? 'bg-yellow-500' : 'bg-green-500',
+      bgColor: sulfidePercentage > 70 ? 'bg-red-50' : sulfidePercentage > 40 ? 'bg-yellow-50' : 'bg-green-50',
+    },
+    {
+      title: 'Benzene',
+      value: `${benzenePercentage.toFixed(1)}%`,
+      icon: Wind,
+      color: benzenePercentage > 70 ? 'bg-red-500' : benzenePercentage > 40 ? 'bg-yellow-500' : 'bg-green-500',
+      bgColor: benzenePercentage > 70 ? 'bg-red-50' : benzenePercentage > 40 ? 'bg-yellow-50' : 'bg-green-50',
+    },
+    {
+      title: 'Carbon Monoxide',
+      value: `${carbonMonoxidePercentage.toFixed(1)}%`,
+      icon: Wind,
+      color: carbonMonoxidePercentage > 70 ? 'bg-red-500' : carbonMonoxidePercentage > 40 ? 'bg-yellow-500' : 'bg-green-500',
+      bgColor: carbonMonoxidePercentage > 70 ? 'bg-red-50' : carbonMonoxidePercentage > 40 ? 'bg-yellow-50' : 'bg-green-50',
     },
   ];
 
@@ -95,7 +163,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -113,6 +181,8 @@ export const Dashboard: React.FC = () => {
           );
         })}
       </div>
+
+
 
       {/* Data Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -142,17 +212,18 @@ export const Dashboard: React.FC = () => {
                     Timestamp
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Area Code
+                    Area Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Organic Weight (kg)
+                    Wet Waste Container Weight (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Inorganic Weight (kg)
+                    Dry Waste Container Weight (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total Weight (kg)
                   </th>
+
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Humidity (%)
                   </th>
@@ -160,13 +231,19 @@ export const Dashboard: React.FC = () => {
                     Temperature (°C)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MQ9 (ppm)
+                    Methane (ppm)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MQ7 (ppm)
+                    Ammonia (ppm)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MQ135 (ppm)
+                    Sulfide (ppm)
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Benzene (ppm)
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Carbon Monoxide (ppm)
                   </th>
                 </tr>
               </thead>
@@ -188,6 +265,7 @@ export const Dashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {item.totalWeight}
                     </td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-cyan-600 font-medium">
                       {item.humidity}%
                     </td>
@@ -196,35 +274,57 @@ export const Dashboard: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        item.mq9 > 50 
+                        (item.methane || 0) > 50 
                           ? 'bg-red-100 text-red-800' 
-                          : item.mq9 > 30 
+                          : (item.methane || 0) > 30 
                           ? 'bg-yellow-100 text-yellow-800' 
                           : 'bg-green-100 text-green-800'
                       }`}>
-                        {item.mq9}
+                        {item.methane || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        item.mq7 > 45 
+                        (item.ammonia || 0) > 45 
                           ? 'bg-red-100 text-red-800' 
-                          : item.mq7 > 25 
+                          : (item.ammonia || 0) > 25 
                           ? 'bg-yellow-100 text-yellow-800' 
                           : 'bg-green-100 text-green-800'
                       }`}>
-                        {item.mq7}
+                        {item.ammonia || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        item.mq135 > 40 
+                        (item.sulfide || 0) > 40 
                           ? 'bg-red-100 text-red-800' 
-                          : item.mq135 > 25 
+                          : (item.sulfide || 0) > 25 
                           ? 'bg-yellow-100 text-yellow-800' 
                           : 'bg-green-100 text-green-800'
                       }`}>
-                        {item.mq135}
+                        {item.sulfide || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        (item.benzene || 0) > 35 
+                          ? 'bg-red-100 text-red-800' 
+                          : (item.benzene || 0) > 20 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {item.benzene || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        (item.carbonMonoxide || 0) > 45 
+                          ? 'bg-red-100 text-red-800' 
+                          : (item.carbonMonoxide || 0) > 25 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {item.carbonMonoxide || 0}
                       </span>
                     </td>
                   </tr>

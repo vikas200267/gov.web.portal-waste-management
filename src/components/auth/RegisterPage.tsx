@@ -32,11 +32,20 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
+    // Check if the email is already registered
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    const emailExists = registeredUsers.some((u: any) => u.email === email);
+
+    if (emailExists) {
+      setError('This email is already registered. Please use a different email or login instead.');
+      return;
+    }
+
     const success = await register(name, email, password);
     if (success) {
       navigate('/dashboard');
     } else {
-      setError('Registration failed');
+      setError('Registration failed. Please try again.');
     }
   };
 

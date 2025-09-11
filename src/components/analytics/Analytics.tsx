@@ -21,8 +21,11 @@ export const Analytics: React.FC = () => {
     setLoading(true);
     setShowTable(false);
     
+    console.log('Analytics: Fetching data with date range:', dateRange.startDate, 'to', dateRange.endDate);
+    
     try {
       const result = await wasteDataService.getAnalyticsData(dateRange.startDate, dateRange.endDate);
+      console.log('Analytics: Data received:', result.data.length, 'records');
       setAnalyticsData(result.data);
       setMlAnalysis(result.analysis);
       setShowTable(true);
@@ -45,7 +48,7 @@ export const Analytics: React.FC = () => {
 
   const downloadReport = () => {
     const csvContent = [
-      'Date,Organic Weight,Inorganic Weight,Total Weight,Pollution,Global Warming Impact',
+      'Date,Wet Waste Container Weight,Dry Waste Container Weight,Total Weight,Pollution,Global Warming Impact',
       ...analyticsData.map(item => 
         `${item.date},${item.organicWeight},${item.inorganicWeight},${item.totalWeight},${item.pollution},${item.globalWarmingImpact}`
       )
@@ -137,7 +140,7 @@ export const Analytics: React.FC = () => {
             <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 text-sm font-medium">Total Organic</p>
+                  <p className="text-green-100 text-sm font-medium">Total Wet Waste</p>
                   <p className="text-2xl font-bold">{totalOrganic.toFixed(1)} kg</p>
                 </div>
                 <PieChart className="h-8 w-8 text-green-200" />
@@ -147,7 +150,7 @@ export const Analytics: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Inorganic</p>
+                  <p className="text-blue-100 text-sm font-medium">Total Dry Waste</p>
                   <p className="text-2xl font-bold">{totalInorganic.toFixed(1)} kg</p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-blue-200" />
@@ -253,7 +256,7 @@ export const Analytics: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-600">Organic Waste</span>
+                    <span className="text-sm font-medium text-gray-600">Wet Waste Container</span>
                     <span className="text-sm font-bold text-green-600">{((totalOrganic / totalWeight) * 100).toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
@@ -265,7 +268,7 @@ export const Analytics: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-600">Inorganic Waste</span>
+                    <span className="text-sm font-medium text-gray-600">Dry Waste Container</span>
                     <span className="text-sm font-bold text-blue-600">{((totalInorganic / totalWeight) * 100).toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
@@ -330,8 +333,8 @@ export const Analytics: React.FC = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organic Weight (kg)</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inorganic Weight (kg)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wet Waste Container Weight (kg)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dry Waste Container Weight (kg)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Weight (kg)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pollution Level</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Global Warming Impact</th>

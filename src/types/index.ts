@@ -12,9 +12,12 @@ export interface WasteData {
   totalWeight: number;
   humidity: number;
   temperature: number;
-  mq9: number;
-  mq7: number;
-  mq135: number;
+  // Updated gas sensor fields to match Firebase structure
+  ammonia?: number;
+  sulfide?: number;
+  benzene?: number;
+  methane?: number;
+  carbonMonoxide?: number;
   areaCode: string;
 }
 

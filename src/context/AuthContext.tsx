@@ -19,6 +19,10 @@ export const useAuth = () => {
   return context;
 };
 
+interface UserWithPassword extends User {
+  password: string;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,16 +41,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (email && password) {
-        const newUser: User = {
-          id: Date.now().toString(),
-          email,
-          name: email.split('@')[0],
+      // Check if user exists in registered users
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]') as UserWithPassword[];
+      const existingUser = registeredUsers.find(u => u.email === email && u.password === password);
+      
+      if (existingUser) {
+        // User exists and password matches
+        const loggedInUser: User = {
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
         };
-        setUser(newUser);
-        localStorage.setItem('user', JSON.stringify(newUser));
+        setUser(loggedInUser);
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
         return true;
       }
+      
       return false;
     } finally {
       setLoading(false);
@@ -60,13 +70,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       if (name && email && password) {
-        const newUser: User = {
+        // Check if email is already registered
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]') as UserWithPassword[];
+        if (registeredUsers.some(u => u.email === email)) {
+          return false; // Email already exists
+        }
+        
+        // Create new user
+        const newUser: UserWithPassword = {
           id: Date.now().toString(),
           email,
           name,
+          password
         };
-        setUser(newUser);
-        localStorage.setItem('user', JSON.stringify(newUser));
+        
+        // Add to registered users list
+        registeredUsers.push(newUser);
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        
+        // Log the user in
+        const loggedInUser: User = {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name
+        };
+        setUser(loggedInUser);
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
         return true;
       }
       return false;
@@ -78,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    // Note: We keep the registeredUsers in localStorage for future login attempts
   };
 
   return (

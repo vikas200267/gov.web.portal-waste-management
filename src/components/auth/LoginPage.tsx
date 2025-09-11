@@ -20,11 +20,20 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    // Check if the user is registered
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    const userExists = registeredUsers.some((u: any) => u.email === email);
+
+    if (!userExists) {
+      setError('User not found. Please sign up first.');
+      return;
+    }
+
     const success = await login(email, password);
     if (success) {
       navigate('/dashboard');
     } else {
-      setError('Invalid credentials');
+      setError('Invalid password. Please try again.');
     }
   };
 
