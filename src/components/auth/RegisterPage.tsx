@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { Recycle, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../../config/firebase';
+import { ref, set } from 'firebase/database';
+import { database } from '../../config/firebase';
+import { Recycle, Mail, Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -10,44 +13,83 @@ export const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { register, loading } = useAuth();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (!name || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
+      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
+      setLoading(false);
       return;
     }
 
-    // Check if the email is already registered
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const emailExists = registeredUsers.some((u: any) => u.email === email);
-
-    if (emailExists) {
-      setError('This email is already registered. Please use a different email or login instead.');
-      return;
-    }
-
-    const success = await register(name, email, password);
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError('Registration failed. Please try again.');
+    try {
+      console.log('Attempting to register with email using direct Firebase auth:', email);
+      
+      // Create user with Firebase Auth directly
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Update profile with name
+      await updateProfile(user, {
+        displayName: name
+      });
+      
+      // Create timestamp for user creation
+      const timestamp = new Date().getTime();
+      
+      // Store additional user data in Realtime Database
+      await set(ref(database, `users/${user.uid}`), {
+        id: user.uid,
+        email: email,
+        name: name,
+        createdAt: timestamp,
+        lastLogin: timestamp
+      });
+      
+      console.log('Registration successful, user created with ID:', user.uid);
+      
+      // IMMEDIATE NAVIGATION: Force navigation to dashboard
+      console.log('Registration successful, forcing navigation to dashboard...');
+      navigate('/dashboard', { replace: true });
+      
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/email-already-in-use') {
+        setError('This email is already registered. Please use a different email or login instead.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Password is too weak. Please choose a stronger password.');
+      } else if (error.code === 'auth/operation-not-allowed') {
+        setError('Email/Password authentication is not enabled in Firebase console. Please contact your administrator to enable Email/Password authentication in the Firebase console.');
+      } else {
+        setError(error.message || 'An error occurred during registration. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
+  
+  // Google sign-in has been removed
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
@@ -77,7 +119,7 @@ export const RegisterPage: React.FC = () => {
                 Full Name
               </label>
               <div className="relative">
-                <User className="h-5 w-5 text-gray-400 absolute left-3 top-3" />
+                <UserIcon className="h-5 w-5 text-gray-400 absolute left-3 top-3" />
                 <input
                   type="text"
                   value={name}
@@ -151,6 +193,8 @@ export const RegisterPage: React.FC = () => {
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
+          
+          {/* Google Sign-in has been removed */}
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">

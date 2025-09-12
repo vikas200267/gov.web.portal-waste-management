@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 import { getAnalytics } from 'firebase/analytics';
+import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -20,6 +21,16 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Realtime Database and get a reference to the service
 export const database = getDatabase(app);
+
+// Initialize Firebase Authentication
+export const auth = getAuth(app);
+
+// Initialize Analytics (will only work in supported browsers)
+try {
+  getAnalytics(app);
+} catch (error) {
+  console.log('Analytics not supported in this environment');
+}
 
 // Initialize Analytics (will only work in supported browsers)
 try {

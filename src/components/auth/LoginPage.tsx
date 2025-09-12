@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../config/firebase';
 import { Recycle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -8,34 +9,54 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login, loading } = useAuth();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (!email || !password) {
       setError('Please fill in all fields');
+      setLoading(false);
       return;
     }
 
-    // Check if the user is registered
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const userExists = registeredUsers.some((u: any) => u.email === email);
-
-    if (!userExists) {
-      setError('User not found. Please sign up first.');
-      return;
-    }
-
-    const success = await login(email, password);
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError('Invalid password. Please try again.');
+    try {
+      console.log('Attempting to log in with email using direct Firebase auth:', email);
+      
+      // Use Firebase Auth directly instead of the context
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login successful:', userCredential.user.uid);
+      
+      // IMMEDIATE NAVIGATION: Force navigation to dashboard regardless of email verification
+      console.log('Login successful, forcing navigation to dashboard...');
+      navigate('/dashboard', { replace: true });
+      
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/user-not-found') {
+        setError('No account found with this email. Please sign up first.');
+      } else if (error.code === 'auth/wrong-password') {
+        setError('Invalid password. Please try again.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Too many failed login attempts. Please try again later or reset your password.');
+      } else if (error.code === 'auth/invalid-credential') {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (error.code === 'auth/operation-not-allowed') {
+        setError('Email/Password authentication is not enabled in Firebase console. Please contact your administrator or try using a different authentication method.');
+      } else {
+        setError(error.message || 'An error occurred during login. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
+  
+  // Google sign-in has been removed
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex items-center justify-center p-4">
@@ -107,6 +128,8 @@ export const LoginPage: React.FC = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+          
+          {/* Google Sign-in has been removed */}
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
