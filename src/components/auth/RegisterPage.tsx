@@ -93,11 +93,11 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-6 text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-white rounded-full p-3">
+            <div className="bg-white dark:bg-gray-700 rounded-full p-3">
               <Recycle className="h-8 w-8 text-purple-600" />
             </div>
           </div>

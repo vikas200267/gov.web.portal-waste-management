@@ -140,8 +140,8 @@ export const Dashboard: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Waste Management Dashboard</h1>
-            <p className="text-gray-600 mt-1">Real-time monitoring of waste containers</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Waste Management Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">Real-time monitoring of waste containers</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -149,15 +149,15 @@ export const Dashboard: React.FC = () => {
                 connectionStatus === 'connected' ? 'bg-green-500' : 
                 connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
               }`}></div>
-              <span className="text-sm text-gray-600 capitalize">{connectionStatus}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300 capitalize">{connectionStatus}</span>
             </div>
-            <div className="flex items-center space-x-2 text-gray-600">
+            <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
               <Wind className="h-4 w-4" />
               <span className="text-sm">Firebase Realtime</span>
             </div>
           </div>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Last updated: {lastUpdate.toLocaleString()}
         </p>
       </div>
@@ -167,11 +167,11 @@ export const Dashboard: React.FC = () => {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.title} className={`${stat.bgColor} rounded-xl p-6 border border-gray-100`}>
+            <div key={stat.title} className={`${stat.bgColor} dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                 </div>
                 <div className={`${stat.color} p-3 rounded-lg`}>
                   <Icon className="h-6 w-6 text-white" />
@@ -185,14 +185,14 @@ export const Dashboard: React.FC = () => {
 
 
       {/* Data Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Trash2 className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Real-time Sensor Data</h2>
+              <Trash2 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Real-time Sensor Data</h2>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {wasteData.length} records
             </div>
           </div>
@@ -201,75 +201,75 @@ export const Dashboard: React.FC = () => {
         <div className="overflow-x-auto">
           {loading ? (
             <div className="p-8 text-center">
-              <RefreshCw className="h-8 w-8 text-gray-400 animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Connecting to Firebase...</p>
+              <RefreshCw className="h-8 w-8 text-gray-400 dark:text-gray-500 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-300">Connecting to Firebase...</p>
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Timestamp
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Area Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Wet Waste Container Weight (kg)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Dry Waste Container Weight (kg)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Total Weight (kg)
                   </th>
 
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Humidity (%)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Temperature (°C)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Methane (ppm)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Ammonia (ppm)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Sulfide (ppm)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Benzene (ppm)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Carbon Monoxide (ppm)
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {wasteData.map((item, index) => (
-                  <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={item.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                       {item.timestamp.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
                       {item.areaCode}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400 font-medium">
                       {item.organicWeight}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 dark:text-blue-400 font-medium">
                       {item.inorganicWeight}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 font-medium">
                       {item.totalWeight}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-cyan-600 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-cyan-600 dark:text-cyan-400 font-medium">
                       {item.humidity}%
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400 font-medium">
                       {item.temperature}°C
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
