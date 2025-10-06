@@ -2,17 +2,9 @@
 > vite-react-typescript-starter@0.0.0 dev
 > vite
 
+Re-optimizing dependencies because lockfile has changed
 
-  VITE v5.4.8  ready in 232 ms
+  VITE v5.4.8  ready in 207 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://10.0.2.234:5173/
-5:35:52 PM [vite] hmr update /src/components/dashboard/DashboardChartControl.tsx, /src/index.css
-5:36:14 PM [vite] hmr update /src/components/dashboard/DashboardChartControl.tsx, /src/index.css
-5:37:55 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
-5:38:04 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
-5:38:32 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
-5:39:01 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
-5:39:16 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
-5:39:26 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
-5:39:36 PM [vite] hmr update /src/components/dashboard/Dashboard.tsx, /src/index.css
