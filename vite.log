@@ -3,11 +3,7 @@
 > vite
 
 
-  VITE v5.4.8  ready in 180 ms
+  VITE v5.4.8  ready in 210 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://10.0.2.234:5173/
-5:51:32 PM [vite] hmr update /src/components/analytics/Analytics.tsx, /src/index.css
-5:51:51 PM [vite] hmr update /src/components/analytics/Analytics.tsx, /src/index.css
-5:52:17 PM [vite] hmr update /src/components/analytics/Analytics.tsx, /src/index.css
-5:52:26 PM [vite] page reload src/services/pdfService.ts

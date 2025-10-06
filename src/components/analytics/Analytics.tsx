@@ -74,10 +74,13 @@ export const Analytics: React.FC = () => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   const downloadReport = async () => {
-    if (analyticsData.length === 0 || !chartRef.current) {
-      console.error("Cannot generate PDF: No data or chart element not available");
+    if (analyticsData.length === 0) {
+      console.error("Cannot generate PDF: No data available");
       return;
     }
+    
+    // Add a small delay to make sure the chart is fully rendered
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Convert analyticsData to the format expected by pdfService
     const pdfData = analyticsData.map(item => ({
@@ -118,8 +121,10 @@ export const Analytics: React.FC = () => {
     }
     
     try {
+      console.log('Generating PDF report...');
+      
       // Generate the PDF
-      await pdfService.generateWasteReport(
+      const result = await pdfService.generateWasteReport(
         pdfData,
         chartRef.current,
         {
@@ -128,6 +133,12 @@ export const Analytics: React.FC = () => {
           suggestions
         }
       );
+      
+      if (result) {
+        console.log('PDF generated successfully');
+      } else {
+        console.error('PDF generation failed');
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
     }

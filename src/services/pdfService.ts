@@ -19,8 +19,8 @@ export const pdfService = {
     options: PdfServiceOptions
   ) {
     // Return early if no data
-    if (data.length === 0 || !chartElement) {
-      console.error("Cannot generate PDF: No data or chart element");
+    if (data.length === 0) {
+      console.error("Cannot generate PDF: No data");
       return;
     }
 
@@ -43,23 +43,41 @@ export const pdfService = {
       pdf.text(dateText, pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
 
-      // Capture chart as image
-      const canvas = await html2canvas(chartElement, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const chartImgData = canvas.toDataURL('image/png');
-      
-      // Calculate chart dimensions to fit on page
-      const chartWidth = pageWidth - 40; // 20mm margin on each side
-      const chartHeight = (canvas.height * chartWidth) / canvas.width;
-      
-      // Add chart to PDF
-      pdf.addImage(chartImgData, 'PNG', 20, yPos, chartWidth, chartHeight);
-      yPos += chartHeight + 15;
+      // Try to capture chart as image if chartElement is provided
+      if (chartElement) {
+        try {
+          const canvas = await html2canvas(chartElement, {
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            allowTaint: true
+          });
+          
+          const chartImgData = canvas.toDataURL('image/png');
+          
+          // Calculate chart dimensions to fit on page
+          const chartWidth = pageWidth - 40; // 20mm margin on each side
+          const chartHeight = (canvas.height * chartWidth) / canvas.width;
+          
+          // Add chart to PDF
+          pdf.addImage(chartImgData, 'PNG', 20, yPos, chartWidth, chartHeight);
+          yPos += chartHeight + 15;
+        } catch (err) {
+          console.error('Error capturing chart:', err);
+          // Add a message if chart capture failed
+          pdf.setFontSize(12);
+          pdf.setTextColor(150, 0, 0);
+          pdf.text('Chart visualization not available', pageWidth / 2, yPos + 20, { align: 'center' });
+          yPos += 40; // Add some space
+        }
+      } else {
+        // Add a message if chart element is not provided
+        pdf.setFontSize(12);
+        pdf.setTextColor(100);
+        pdf.text('Chart visualization not available', pageWidth / 2, yPos + 20, { align: 'center' });
+        yPos += 40; // Add some space
+      }
 
       // Add summary statistics
       pdf.setFontSize(14);
