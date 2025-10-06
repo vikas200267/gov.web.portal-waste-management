@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import { WasteData } from '../types';
+import { WasteData, AnalyticsData } from '../types';
 
 interface PdfServiceOptions {
   title: string;

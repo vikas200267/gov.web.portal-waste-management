@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAnalyticsContext } from '../../context/AnalyticsContext';
 import { wasteDataService } from '../../services/wasteDataService';
+import { pdfService } from '../../services/pdfService';
 import { AnalyticsData, DateRange, MLAnalysis } from '../../types';
 import { Calendar, TrendingUp, BarChart3, Download, Lightbulb, AlertTriangle, LineChart } from 'lucide-react';
 import AnalyticsChart from './AnalyticsChart';
@@ -70,23 +71,66 @@ export const Analytics: React.FC = () => {
     ? analyticsData.reduce((sum, item) => sum + item.globalWarmingImpact, 0) / analyticsData.length 
     : 0;
 
-  const downloadReport = () => {
-    const csvContent = [
-      'Date,Wet Waste Container Weight,Dry Waste Container Weight,Total Weight,Pollution,Global Warming Impact',
-      ...analyticsData.map(item => 
-        `${item.date},${item.organicWeight},${item.inorganicWeight},${item.totalWeight},${item.pollution},${item.globalWarmingImpact}`
-      )
-    ].join('\n');
+  const chartRef = useRef<HTMLDivElement>(null);
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `waste-analytics-${dateRange.startDate}-${dateRange.endDate}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+  const downloadReport = async () => {
+    if (analyticsData.length === 0 || !chartRef.current) {
+      console.error("Cannot generate PDF: No data or chart element not available");
+      return;
+    }
+
+    // Convert analyticsData to the format expected by pdfService
+    const pdfData = analyticsData.map(item => ({
+      id: item.date,
+      timestamp: new Date(item.date),
+      organicWeight: item.organicWeight,
+      inorganicWeight: item.inorganicWeight,
+      totalWeight: item.totalWeight,
+      temperature: 0, // We don't have this data in Analytics
+      humidity: 0,    // We don't have this data in Analytics
+      methane: item.pollution, // Map pollution to methane for visualization
+      areaCode: "N/A" // Not available in Analytics data
+    }));
+
+    // Generate suggestions based on ML analysis
+    const suggestions = [];
+    
+    if (mlAnalysis) {
+      if (mlAnalysis.pollution > 50) {
+        suggestions.push(`High pollution levels detected (${mlAnalysis.pollution.toFixed(1)}). Consider implementing stricter waste segregation policies.`);
+      }
+      
+      if (mlAnalysis.globalWarmingImpact > 70) {
+        suggestions.push(`Significant global warming impact detected (${mlAnalysis.globalWarmingImpact.toFixed(1)}). Evaluate carbon footprint reduction strategies.`);
+      }
+      
+      // Add any suggestions from the ML model
+      if (mlAnalysis.suggestions && mlAnalysis.suggestions.length > 0) {
+        mlAnalysis.suggestions.forEach(suggestion => suggestions.push(suggestion));
+      }
+    }
+    
+    // If no suggestions, add general ones
+    if (suggestions.length === 0) {
+      suggestions.push("Consider implementing a waste segregation awareness program.");
+      suggestions.push("Regular monitoring of waste patterns can lead to better management strategies.");
+      suggestions.push("Evaluate the efficiency of current waste collection routes and schedules.");
+    }
+    
+    try {
+      // Generate the PDF
+      await pdfService.generateWasteReport(
+        pdfData,
+        chartRef.current,
+        {
+          title: 'Waste Analytics Report',
+          dateRange,
+          suggestions
+        }
+      );
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
   };
 
   return (
@@ -321,7 +365,7 @@ export const Analytics: React.FC = () => {
                 setDataType={setDataType}
               />
               
-              <div className="mt-6">
+              <div className="mt-6" ref={chartRef}>
                 <AnalyticsChart 
                   analyticsData={analyticsData}
                   chartType={chartType}
