@@ -437,82 +437,17 @@ export const wasteDataService = {
     
     console.log(`Analytics service: Filtered data for range ${startDate} to ${endDate}:`, filteredData.length, 'records');
     
-    // If no data is available for the selected date range, provide some mock data
+    // If no data is available for the selected date range, return empty result
     if (filteredData.length === 0) {
-      console.log('No data found for selected date range, generating sample data');
-      // Generate a few mock entries within the date range
-      const mockEntries = [];
-      const daysDifference = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-      const numEntries = Math.max(3, Math.min(10, Math.ceil(daysDifference)));
-      
-      for (let i = 0; i < numEntries; i++) {
-        const timestamp = new Date(start.getTime() + i * (end.getTime() - start.getTime()) / (numEntries - 1));
-        // Prepare gas sensor data
-        const methane = Math.round((Math.random() * 60 + 10) * 100) / 100; // 10-70 ppm
-        const ammonia = Math.round((Math.random() * 45 + 15) * 100) / 100; // 15-60 ppm
-        const sulfide = Math.round((Math.random() * 40 + 10) * 100) / 100; // 10-50 ppm
-        const benzene = Math.round((Math.random() * 35 + 5) * 100) / 100; // 5-40 ppm
-        const carbonMonoxide = Math.round((Math.random() * 50 + 5) * 100) / 100; // 5-55 ppm
-        
-        // Random chance to have zero weight for testing
-        const hasZeroWeight = Math.random() < 0.3; // 30% chance of zero weight
-        
-        let organicWeight: number;
-        let inorganicWeight: number;
-        
-        if (hasZeroWeight) {
-          // For demonstrating zero weight scenario, assign weights based on gas readings
-          const hasWetWasteGases = methane > 0 || ammonia > 0 || sulfide > 0 || benzene > 0;
-          const hasDryWasteGases = carbonMonoxide > 0;
-          
-          if (hasWetWasteGases && !hasDryWasteGases) {
-            // Only wet waste detected
-            organicWeight = Math.round((Math.random() * 25) * 100) / 100;
-            inorganicWeight = 0;
-          } else if (!hasWetWasteGases && hasDryWasteGases) {
-            // Only dry waste detected
-            organicWeight = 0;
-            inorganicWeight = Math.round((Math.random() * 25) * 100) / 100;
-          } else if (hasWetWasteGases && hasDryWasteGases) {
-            // Both detected, randomly assign one type
-            if (Math.random() < 0.5) {
-              organicWeight = Math.round((Math.random() * 25) * 100) / 100;
-              inorganicWeight = 0;
-            } else {
-              organicWeight = 0;
-              inorganicWeight = Math.round((Math.random() * 25) * 100) / 100;
-            }
-          } else {
-            // No gases detected
-            organicWeight = 0;
-            inorganicWeight = 0;
-          }
-        } else {
-          // Normal data generation with non-zero weights
-          organicWeight = Math.round((Math.random() * 50 + 10) * 100) / 100; // 10-60 kg
-          inorganicWeight = Math.round((Math.random() * 40 + 5) * 100) / 100; // 5-45 kg
+      console.log('No data found for selected date range. Dashboard has no data for this period.');
+      return {
+        data: [],
+        analysis: {
+          pollution: 0,
+          globalWarmingImpact: 0,
+          suggestions: ['No data available for the selected date range. Please choose a different date range with available dashboard data.']
         }
-        
-        mockEntries.push({
-          id: `mock-${i}`,
-          timestamp,
-          organicWeight,
-          inorganicWeight,
-          totalWeight: organicWeight + inorganicWeight,
-          humidity: Math.round((Math.random() * 40 + 30) * 100) / 100,
-          temperature: Math.round((Math.random() * 20 + 15) * 100) / 100,
-          methane,
-          ammonia,
-          sulfide,
-          benzene,
-          carbonMonoxide,
-          areaCode: ['A001', 'A002', 'A003', 'A004', 'A005'][Math.floor(Math.random() * 5)]
-        });
-      }
-      
-      // Total weight is already calculated during object creation
-      
-      filteredData = mockEntries;
+      };
     }
     
     // Calculate ML analysis

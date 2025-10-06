@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup": "./start.sh",
+    "stop": "./stop.sh"
   },
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",

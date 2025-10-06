@@ -133,7 +133,26 @@ export const Analytics: React.FC = () => {
         </div>
       )}
 
-      {showTable && !loading && (
+      {showTable && !loading && analyticsData.length === 0 && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-8 mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="bg-yellow-500 p-3 rounded-lg">
+              <AlertTriangle className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Data Available</h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                No data is available in the dashboard for the selected date range ({dateRange.startDate} to {dateRange.endDate}).
+              </p>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">
+                Please select a different date range that has data in the dashboard page, or wait for new data to be collected.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTable && !loading && analyticsData.length > 0 && (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
