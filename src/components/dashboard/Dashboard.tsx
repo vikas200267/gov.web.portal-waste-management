@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { wasteDataService } from '../../services/wasteDataService';
+import { pdfService } from '../../services/pdfService';
 import { WasteData } from '../../types';
 import { RefreshCw, Trash2, TreePine, Factory, Thermometer, Droplets, Wind, BarChart3 } from 'lucide-react';
 import DashboardChart from './DashboardChart';
@@ -12,6 +13,7 @@ export const Dashboard: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [dataType, setDataType] = useState<'waste' | 'gas' | 'environment'>('waste');
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setConnectionStatus('connecting');
@@ -48,6 +50,75 @@ export const Dashboard: React.FC = () => {
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(today.getDate() - 7);
   
+  // Generate suggestions based on current data
+  const generateSuggestions = () => {
+    const suggestions: string[] = [];
+    
+    // Total waste suggestions
+    const totalWaste = totalOrganic + totalInorganic;
+    if (totalWaste > 100) {
+      suggestions.push("High waste volume detected. Consider implementing waste reduction strategies such as composting programs and increasing recycling awareness.");
+    } else if (totalWaste < 30) {
+      suggestions.push("Low waste volume indicates good waste management practices. Continue current strategies.");
+    }
+    
+    // Organic vs inorganic ratio suggestions
+    const organicRatio = totalOrganic / (totalOrganic + totalInorganic || 1); // Avoid division by zero
+    if (organicRatio > 0.7) {
+      suggestions.push("High proportion of organic waste. Consider implementing a composting program to reduce organic waste going to landfill.");
+    } else if (organicRatio < 0.3) {
+      suggestions.push("High proportion of inorganic waste. Review recycling practices and increase education on recyclable materials.");
+    }
+    
+    // Temperature and humidity suggestions
+    if (avgTemperature > 30) {
+      suggestions.push("High temperature detected. Ensure proper ventilation and cooling systems in waste storage areas to prevent odor and accelerated decomposition.");
+    }
+    
+    if (avgHumidity > 70) {
+      suggestions.push("High humidity levels detected. Consider improved drainage and ventilation in waste storage areas to prevent excess moisture accumulation.");
+    }
+    
+    // Gas level suggestions
+    const avgMethane = wasteData.length > 0 
+      ? wasteData.reduce((sum, item) => sum + (item.methane || 0), 0) / wasteData.length 
+      : 0;
+      
+    if (avgMethane > 50) {
+      suggestions.push("Elevated methane levels detected. Implement gas collection systems and increase monitoring frequency to prevent environmental hazards.");
+    }
+    
+    // If no specific suggestions, add general ones
+    if (suggestions.length === 0) {
+      suggestions.push("All metrics are within normal ranges. Continue current waste management practices.");
+      suggestions.push("Consider implementing digital tracking of waste collection to improve route efficiency.");
+      suggestions.push("Regular equipment maintenance is recommended to ensure optimal waste processing.");
+    }
+    
+    return suggestions;
+  };
+  
+  // Generate PDF report
+  const handleDownloadPDF = async () => {
+    if (wasteData.length === 0 || !chartRef.current) {
+      console.error("Cannot generate PDF: No data or chart element not available");
+      return;
+    }
+    
+    // Generate suggested actions based on data
+    const suggestions = generateSuggestions();
+    
+    // Generate the PDF report
+    await pdfService.generateWasteReport(
+      wasteData, 
+      chartRef.current, 
+      {
+        title: `Waste Management Dashboard Report - ${dataType.charAt(0).toUpperCase() + dataType.slice(1)} Data`,
+        dateRange,
+        suggestions
+      }
+    );
+  };
   const dateRange = {
     startDate: oneWeekAgo.toISOString().split('T')[0],
     endDate: today.toISOString().split('T')[0]
@@ -219,14 +290,19 @@ export const Dashboard: React.FC = () => {
             setChartType={setChartType}
             dataType={dataType}
             setDataType={setDataType}
+            onDownloadPdf={handleDownloadPDF}
+            hasData={wasteData.length > 0}
           />
           
-          <div style={{ height: '400px' }}>
+          <div style={{ height: '400px' }} ref={chartRef}>
             <DashboardChart 
               wasteData={wasteData}
               chartType={chartType}
               dataType={dataType}
-              dateRange={dateRange}
+              dateRange={{
+                startDate: oneWeekAgo.toISOString().split('T')[0],
+                endDate: today.toISOString().split('T')[0]
+              }}
             />
           </div>
         </div>
