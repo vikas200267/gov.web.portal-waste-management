@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AnalyticsProvider } from './context/AnalyticsContext';
 import { Layout } from './components/Layout';
 import { LoginPage } from './components/auth/LoginPage';
 import { RegisterPage } from './components/auth/RegisterPage';
@@ -85,7 +86,9 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppContent />
+        <AnalyticsProvider>
+          <AppContent />
+        </AnalyticsProvider>
       </ThemeProvider>
     </AuthProvider>
   );

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { wasteDataService } from '../../services/wasteDataService';
 import { WasteData } from '../../types';
-import { RefreshCw, Trash2, TreePine, Factory, Thermometer, Droplets, Wind } from 'lucide-react';
+import { RefreshCw, Trash2, TreePine, Factory, Thermometer, Droplets, Wind, BarChart3 } from 'lucide-react';
+import DashboardChart from './DashboardChart';
+import DashboardChartControl from './DashboardChartControl';
 
 export const Dashboard: React.FC = () => {
   const [wasteData, setWasteData] = useState<WasteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [dataType, setDataType] = useState<'waste' | 'gas' | 'environment'>('waste');
 
   useEffect(() => {
     setConnectionStatus('connecting');
@@ -38,6 +42,16 @@ export const Dashboard: React.FC = () => {
   const avgMethanePpm = wasteData.length > 0 
     ? wasteData.reduce((sum, item) => sum + (item.methane || 0), 0) / wasteData.length 
     : 0;
+    
+  // Get the current date for chart display
+  const today = new Date();
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(today.getDate() - 7);
+  
+  const dateRange = {
+    startDate: oneWeekAgo.toISOString().split('T')[0],
+    endDate: today.toISOString().split('T')[0]
+  };
   const avgAmmoniaPpm = wasteData.length > 0 
     ? wasteData.reduce((sum, item) => sum + (item.ammonia || 0), 0) / wasteData.length 
     : 0;
@@ -181,6 +195,42 @@ export const Dashboard: React.FC = () => {
           );
         })}
       </div>
+      
+      {/* Data Visualization Section */}
+      {wasteData.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <RefreshCw className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Data Visualization
+                {dataType === 'waste' && ' - Waste Collection'}
+                {dataType === 'gas' && ' - Gas Levels'}
+                {dataType === 'environment' && ' - Environmental Conditions'}
+              </h3>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Last updated: {lastUpdate.toLocaleTimeString()}
+            </div>
+          </div>
+          
+          <DashboardChartControl
+            chartType={chartType}
+            setChartType={setChartType}
+            dataType={dataType}
+            setDataType={setDataType}
+          />
+          
+          <div style={{ height: '400px' }}>
+            <DashboardChart 
+              wasteData={wasteData}
+              chartType={chartType}
+              dataType={dataType}
+              dateRange={dateRange}
+            />
+          </div>
+        </div>
+      )}
 
 
 
