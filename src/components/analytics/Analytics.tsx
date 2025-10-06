@@ -1,36 +1,60 @@
 import React, { useState } from 'react';
+import { useAnalyticsContext } from '../../context/AnalyticsContext';
 import { wasteDataService } from '../../services/wasteDataService';
 import { AnalyticsData, DateRange, MLAnalysis } from '../../types';
-import { Calendar, TrendingUp, BarChart3, PieChart, Download, Lightbulb, AlertTriangle } from 'lucide-react';
+import { Calendar, TrendingUp, BarChart3, Download, Lightbulb, AlertTriangle, LineChart } from 'lucide-react';
+import AnalyticsChart from './AnalyticsChart';
+import AnalyticsChartControl from './AnalyticsChartControl';
 
 export const Analytics: React.FC = () => {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
-  const [mlAnalysis, setMlAnalysis] = useState<MLAnalysis | null>(null);
+  const {
+    analyticsData,
+    setAnalyticsData,
+    mlAnalysis,
+    setMlAnalysis,
+    dateRange,
+    setDateRange
+  } = useAnalyticsContext();
   const [loading, setLoading] = useState(false);
-  const [showTable, setShowTable] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-  });
+  // Check if there's data from a previous search (from context)
+  const hasInitialData = analyticsData.length > 0;
+  
+  // Ensure showTable reflects whether we have data to display
+  const [showTable, setShowTable] = useState(hasInitialData);
+  
+  // Track whether user has searched yet to show appropriate message
+  const [hasSearched, setHasSearched] = useState(hasInitialData);
+  
+  // Chart state
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [dataType, setDataType] = useState<'waste' | 'environmental'>('waste');
 
   const handleDateRangeChange = (field: keyof DateRange, value: string) => {
-    setDateRange(prev => ({ ...prev, [field]: value }));
+  setDateRange({ ...dateRange, [field]: value });
   };
 
   const handleApplyFilter = async () => {
     setLoading(true);
     setShowTable(false);
-    
-    console.log('Analytics: Fetching data with date range:', dateRange.startDate, 'to', dateRange.endDate);
-    
     try {
+      console.log('Fetching analytics data for date range:', dateRange.startDate, 'to', dateRange.endDate);
       const result = await wasteDataService.getAnalyticsData(dateRange.startDate, dateRange.endDate);
-      console.log('Analytics: Data received:', result.data.length, 'records');
       setAnalyticsData(result.data);
       setMlAnalysis(result.analysis);
-      setShowTable(true);
+      
+      // Mark that user has performed a search
+      setHasSearched(true);
+      
+      // Only show table if we have data
+      if (result.data.length > 0) {
+        setShowTable(true);
+      } else {
+        console.log('No data found for date range:', dateRange.startDate, 'to', dateRange.endDate);
+      }
     } catch (error) {
       console.error('Error loading analytics data:', error);
+      setAnalyticsData([]);
+      setHasSearched(true); // Still mark as searched even if there's an error
     } finally {
       setLoading(false);
     }
@@ -133,21 +157,75 @@ export const Analytics: React.FC = () => {
         </div>
       )}
 
-      {showTable && !loading && analyticsData.length === 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-8 mb-8">
+      {!loading && hasSearched && analyticsData.length === 0 && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-8 mb-8 shadow-md">
           <div className="flex items-center space-x-4">
             <div className="bg-yellow-500 p-3 rounded-lg">
               <AlertTriangle className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Data Available</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                No data is available in the dashboard for the selected date range ({dateRange.startDate} to {dateRange.endDate}).
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Data Found for Selected Dates</h3>
+              <p className="text-gray-700 dark:text-gray-300 font-medium">
+                There is no real waste management data available for the period <span className="text-yellow-700 dark:text-yellow-400 font-bold">{dateRange.startDate}</span> to <span className="text-yellow-700 dark:text-yellow-400 font-bold">{dateRange.endDate}</span>.
               </p>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">
-                Please select a different date range that has data in the dashboard page, or wait for new data to be collected.
-              </p>
+              <div className="mt-4 space-y-2">
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="font-semibold">Possible reasons:</span>
+                </p>
+                <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1 ml-2">
+                  <li>No data has been collected for this date range</li>
+                  <li>Data collection devices were offline during this period</li>
+                  <li>Data has not yet been uploaded to the system</li>
+                </ul>
+                <p className="text-gray-700 dark:text-gray-300 mt-3">
+                  <span className="font-semibold">Recommended actions:</span>
+                </p>
+                <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1 ml-2">
+                  <li>Try selecting a different date range</li>
+                  <li>Check the Dashboard page for available data periods</li>
+                  <li>Contact system administrator if data should be available</li>
+                </ul>
+              </div>
             </div>
+          </div>
+          <div className="mt-5 flex justify-end">
+            <button
+              onClick={async () => {
+                // Set date range to past 30 days as a helpful default
+                const endDate = new Date().toISOString().split('T')[0];
+                const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                
+                // Update the date range in the UI
+                setDateRange({ startDate, endDate });
+                
+                // Trigger a regular data fetch
+                setLoading(true);
+                setShowTable(false);
+                try {
+                  console.log('Checking for data in last 30 days:', startDate, 'to', endDate);
+                  const result = await wasteDataService.getAnalyticsData(startDate, endDate);
+                  setAnalyticsData(result.data);
+                  setMlAnalysis(result.analysis);
+                  setHasSearched(true);
+                  
+                  // Only show table if we have data
+                  if (result.data.length > 0) {
+                    setShowTable(true);
+                  } else {
+                    console.log('No data found for last 30 days');
+                    // Keep the message showing that no data is available
+                  }
+                } catch (error) {
+                  console.error('Error loading analytics data:', error);
+                  setAnalyticsData([]);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md font-medium transition-colors duration-150 text-sm"
+            >
+              Try Last 30 Days
+            </button>
           </div>
         </div>
       )}
@@ -162,7 +240,7 @@ export const Analytics: React.FC = () => {
                   <p className="text-green-100 text-sm font-medium">Total Wet Waste</p>
                   <p className="text-2xl font-bold">{totalOrganic.toFixed(1)} kg</p>
                 </div>
-                <PieChart className="h-8 w-8 text-green-200" />
+                <BarChart3 className="h-8 w-8 text-green-200" />
               </div>
             </div>
 
@@ -189,8 +267,13 @@ export const Analytics: React.FC = () => {
             <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-red-100 text-sm font-medium">Avg. Pollution</p>
-                  <p className="text-2xl font-bold">{avgPollution.toFixed(1)}</p>
+                  <p className="text-red-100 text-sm font-medium">Pollution Level</p>
+                  <p className="text-2xl font-bold">{avgPollution.toFixed(1)}<span className="text-sm">/100</span></p>
+                  <p className="text-xs mt-1 text-red-100">
+                    {avgPollution > 60 ? 'Critical - Action Required' : 
+                     avgPollution > 40 ? 'Elevated - Monitoring Needed' : 
+                     'Acceptable Range'}
+                  </p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-red-200" />
               </div>
@@ -199,70 +282,155 @@ export const Analytics: React.FC = () => {
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 text-sm font-medium">Global Warming</p>
-                  <p className="text-2xl font-bold">{avgGlobalWarming.toFixed(1)}</p>
+                  <p className="text-orange-100 text-sm font-medium">Global Warming Impact</p>
+                  <p className="text-2xl font-bold">{avgGlobalWarming.toFixed(1)}<span className="text-sm">/100</span></p>
+                  <p className="text-xs mt-1 text-orange-100">
+                    {avgGlobalWarming > 50 ? 'High Risk - Urgent Action' : 
+                     avgGlobalWarming > 30 ? 'Medium Risk - Action Recommended' : 
+                     'Low Risk - Monitor'}
+                  </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-orange-200" />
               </div>
             </div>
           </div>
 
-          {/* ML Analysis Suggestions */}
-          {mlAnalysis && (
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6 mb-8">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="bg-indigo-600 p-2 rounded-lg">
-                  <Lightbulb className="h-6 w-6 text-white" />
+          {/* Analytics Chart */}
+          {analyticsData.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  {chartType === 'line' ? (
+                    <LineChart className="h-5 w-5 text-gray-600" />
+                  ) : chartType === 'bar' ? (
+                    <BarChart3 className="h-5 w-5 text-gray-600" />
+                  ) : (
+                    <BarChart3 className="h-5 w-5 text-gray-600" />
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-900">Analytics Visualization</h3>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">ML-Powered Suggestions</h3>
-                  <p className="text-sm text-gray-600">Based on environmental impact analysis</p>
+                <div className="text-sm text-gray-500">
+                  {dateRange.startDate} to {dateRange.endDate}
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <h4 className="font-semibold text-gray-900 mb-2">Pollution Level Analysis</h4>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className={`h-3 rounded-full transition-all duration-500 ${
-                          mlAnalysis.pollution > 60 ? 'bg-red-500' : 
-                          mlAnalysis.pollution > 40 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min(mlAnalysis.pollution, 100)}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm font-medium">{mlAnalysis.pollution.toFixed(1)}</span>
+              <AnalyticsChartControl 
+                chartType={chartType}
+                setChartType={setChartType}
+                dataType={dataType}
+                setDataType={setDataType}
+              />
+              
+              <div className="mt-6">
+                <AnalyticsChart 
+                  analyticsData={analyticsData}
+                  chartType={chartType}
+                  dataType={dataType}
+                  dateRange={dateRange}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ML Analysis Suggestions */}
+          {mlAnalysis && (
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-indigo-600 p-2 rounded-lg">
+                    <Lightbulb className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">ML-Powered Suggestions</h3>
+                    <p className="text-sm text-gray-600">Based on environmental impact analysis</p>
                   </div>
                 </div>
+                <div className="bg-indigo-100 px-3 py-1.5 rounded-lg">
+                  <span className="text-xs text-indigo-700 font-medium">Date Range: {dateRange.startDate} to {dateRange.endDate}</span>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-gray-200 mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Environmental Impact Summary</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Based on {analyticsData.length} data points from {dateRange.startDate} to {dateRange.endDate}
+                </p>
                 
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <h4 className="font-semibold text-gray-900 mb-2">Global Warming Impact</h4>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className={`h-3 rounded-full transition-all duration-500 ${
-                          mlAnalysis.globalWarmingImpact > 50 ? 'bg-red-500' : 
-                          mlAnalysis.globalWarmingImpact > 30 ? 'bg-orange-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min(mlAnalysis.globalWarmingImpact, 100)}%` }}
-                      ></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                        mlAnalysis.pollution > 60 ? 'bg-red-500' : 
+                        mlAnalysis.pollution > 40 ? 'bg-yellow-500' : 'bg-green-500'
+                      }`}></span>
+                      Pollution Level Analysis
+                    </h5>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className={`h-3 rounded-full transition-all duration-500 ${
+                            mlAnalysis.pollution > 60 ? 'bg-red-500' : 
+                            mlAnalysis.pollution > 40 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(mlAnalysis.pollution, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium">{mlAnalysis.pollution.toFixed(1)}</span>
                     </div>
-                    <span className="text-sm font-medium">{mlAnalysis.globalWarmingImpact.toFixed(1)}</span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {mlAnalysis.pollution > 60 
+                        ? 'Critical level - Immediate action required' 
+                        : mlAnalysis.pollution > 40 
+                          ? 'Elevated level - Monitoring and action recommended' 
+                          : 'Acceptable level - Continue current practices'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                        mlAnalysis.globalWarmingImpact > 50 ? 'bg-red-500' : 
+                        mlAnalysis.globalWarmingImpact > 30 ? 'bg-orange-500' : 'bg-green-500'
+                      }`}></span>
+                      Global Warming Impact
+                    </h5>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className={`h-3 rounded-full transition-all duration-500 ${
+                            mlAnalysis.globalWarmingImpact > 50 ? 'bg-red-500' : 
+                            mlAnalysis.globalWarmingImpact > 30 ? 'bg-orange-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(mlAnalysis.globalWarmingImpact, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium">{mlAnalysis.globalWarmingImpact.toFixed(1)}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {mlAnalysis.globalWarmingImpact > 50 
+                        ? 'High risk - Significant environmental impact' 
+                        : mlAnalysis.globalWarmingImpact > 30 
+                          ? 'Medium risk - Moderate environmental impact' 
+                          : 'Low risk - Minimal environmental impact'}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 {mlAnalysis.suggestions.map((suggestion, index) => (
-                  <div key={index} className="flex items-start space-x-3 bg-white rounded-lg p-3 border border-gray-200">
+                  <div key={index} className="flex items-start space-x-3 bg-white rounded-lg p-3 border border-gray-200 hover:bg-indigo-50 transition-colors duration-200">
                     <div className="flex-shrink-0 w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center mt-0.5">
                       <span className="text-xs font-medium text-indigo-600">{index + 1}</span>
                     </div>
                     <p className="text-gray-700 text-sm">{suggestion}</p>
                   </div>
                 ))}
+                <div className="mt-2 text-right">
+                  <p className="text-xs text-gray-500 italic">
+                    Suggestions generated based on data from {dateRange.startDate} to {dateRange.endDate}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -307,9 +475,14 @@ export const Analytics: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-600">Pollution Level</span>
-                    <span className={`text-sm font-bold ${avgPollution > 50 ? 'text-red-600' : avgPollution > 30 ? 'text-yellow-600' : 'text-green-600'}`}>
-                      {avgPollution.toFixed(1)}/100
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${avgPollution > 50 ? 'text-red-600' : avgPollution > 30 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {avgPollution.toFixed(1)}/100
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${avgPollution > 50 ? 'bg-red-100 text-red-800' : avgPollution > 30 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                        {avgPollution > 50 ? 'Critical' : avgPollution > 30 ? 'Elevated' : 'Low'}
+                      </span>
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div 
@@ -321,9 +494,14 @@ export const Analytics: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-600">Global Warming Impact</span>
-                    <span className={`text-sm font-bold ${avgGlobalWarming > 40 ? 'text-red-600' : avgGlobalWarming > 25 ? 'text-orange-600' : 'text-green-600'}`}>
-                      {avgGlobalWarming.toFixed(1)}/100
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${avgGlobalWarming > 40 ? 'text-red-600' : avgGlobalWarming > 25 ? 'text-orange-600' : 'text-green-600'}`}>
+                        {avgGlobalWarming.toFixed(1)}/100
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${avgGlobalWarming > 40 ? 'bg-red-100 text-red-800' : avgGlobalWarming > 25 ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}`}>
+                        {avgGlobalWarming > 40 ? 'High Risk' : avgGlobalWarming > 25 ? 'Medium Risk' : 'Low Risk'}
+                      </span>
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div 
@@ -392,7 +570,7 @@ export const Analytics: React.FC = () => {
         </>
       )}
 
-      {!showTable && !loading && (
+      {!loading && !hasSearched && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Date Range to View Analytics</h3>
