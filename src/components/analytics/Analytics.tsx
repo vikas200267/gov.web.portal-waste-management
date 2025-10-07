@@ -72,31 +72,25 @@ export const Analytics: React.FC = () => {
     : 0;
 
   const chartRef = useRef<HTMLDivElement>(null);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
 
   const downloadReport = async () => {
     if (analyticsData.length === 0) {
       console.error("Cannot generate PDF: No data available");
+      alert("No data available to generate PDF. Please select a date range with data and click 'Apply Filter' first.");
       return;
     }
     
-    // Add a small delay to make sure the chart is fully rendered
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Convert analyticsData to the format expected by pdfService
-    const pdfData = analyticsData.map(item => ({
-      id: item.date,
-      timestamp: new Date(item.date),
-      organicWeight: item.organicWeight,
-      inorganicWeight: item.inorganicWeight,
-      totalWeight: item.totalWeight,
-      temperature: 0, // We don't have this data in Analytics
-      humidity: 0,    // We don't have this data in Analytics
-      methane: item.pollution, // Map pollution to methane for visualization
-      areaCode: "N/A" // Not available in Analytics data
-    }));
+    console.log('Starting PDF generation...');
+    console.log('Analytics data points:', analyticsData.length);
+    console.log('PDF content ref available:', !!pdfContentRef.current);
+    
+    // Add a small delay to make sure the charts are fully rendered
+    console.log('Waiting for charts to render...');
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     // Generate suggestions based on ML analysis
-    const suggestions = [];
+    const suggestions: string[] = [];
     
     if (mlAnalysis) {
       if (mlAnalysis.pollution > 50) {
@@ -120,27 +114,42 @@ export const Analytics: React.FC = () => {
       suggestions.push("Evaluate the efficiency of current waste collection routes and schedules.");
     }
     
+    console.log('Generated suggestions:', suggestions.length);
+    
     try {
-      console.log('Generating PDF report...');
+      console.log('Calling pdfService.generateAnalyticsReport...');
       
-      // Generate the PDF
-      const result = await pdfService.generateWasteReport(
+      // Prepare analytics data for PDF
+      const pdfData = {
+        analyticsData,
+        totalOrganic,
+        totalInorganic,
+        totalWeight,
+        avgPollution,
+        avgGlobalWarming
+      };
+      
+      // Generate the PDF using the new analytics report function
+      const result = await pdfService.generateAnalyticsReport(
         pdfData,
-        chartRef.current,
+        pdfContentRef.current,
         {
-          title: 'Waste Analytics Report',
+          title: 'Environmental Analytics Report',
           dateRange,
           suggestions
         }
       );
       
       if (result) {
-        console.log('PDF generated successfully');
+        console.log('✓ Analytics PDF generated successfully');
+        alert('PDF report downloaded successfully!');
       } else {
-        console.error('PDF generation failed');
+        console.error('✗ PDF generation failed - function returned false');
+        alert('Failed to generate PDF. Please check the console for errors.');
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('✗ Error generating PDF:', error);
+      alert(`Error generating PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -630,6 +639,148 @@ export const Analytics: React.FC = () => {
           <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Date Range to View Analytics</h3>
           <p className="text-gray-600">Choose your desired date range and click "Apply Filter" to analyze waste data with our ML model.</p>
+        </div>
+      )}
+
+      {/* Hidden PDF Content - includes all report content without filters and download button */}
+      {showTable && !loading && analyticsData.length > 0 && (
+        <div ref={pdfContentRef} style={{ position: 'absolute', left: '-9999px', top: 0, width: '800px', backgroundColor: '#ffffff' }}>
+          <div style={{ padding: '20px' }}>
+            {/* Summary Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '15px', marginBottom: '20px' }}>
+              <div style={{ background: 'linear-gradient(to right, #10b981, #059669)', borderRadius: '10px', padding: '15px', color: 'white' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px', opacity: 0.9 }}>Total Wet Waste</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalOrganic.toFixed(1)} kg</div>
+              </div>
+
+              <div style={{ background: 'linear-gradient(to right, #3b82f6, #2563eb)', borderRadius: '10px', padding: '15px', color: 'white' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px', opacity: 0.9 }}>Total Dry Waste</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalInorganic.toFixed(1)} kg</div>
+              </div>
+
+              <div style={{ background: 'linear-gradient(to right, #8b5cf6, #7c3aed)', borderRadius: '10px', padding: '15px', color: 'white' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px', opacity: 0.9 }}>Total Weight</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalWeight.toFixed(1)} kg</div>
+              </div>
+
+              <div style={{ background: 'linear-gradient(to right, #ef4444, #dc2626)', borderRadius: '10px', padding: '15px', color: 'white' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px', opacity: 0.9 }}>Pollution Level</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{avgPollution.toFixed(1)}/100</div>
+                <div style={{ fontSize: '9px', marginTop: '3px', opacity: 0.9 }}>
+                  {avgPollution > 60 ? 'Critical - Action Required' : 
+                   avgPollution > 40 ? 'Elevated - Monitoring Needed' : 
+                   'Acceptable Range'}
+                </div>
+              </div>
+
+              <div style={{ background: 'linear-gradient(to right, #f97316, #ea580c)', borderRadius: '10px', padding: '15px', color: 'white' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px', opacity: 0.9 }}>Global Warming Impact</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{avgGlobalWarming.toFixed(1)}/100</div>
+                <div style={{ fontSize: '9px', marginTop: '3px', opacity: 0.9 }}>
+                  {avgGlobalWarming > 50 ? 'High Risk - Urgent Action' : 
+                   avgGlobalWarming > 30 ? 'Medium Risk - Action Recommended' : 
+                   'Low Risk - Monitor'}
+                </div>
+              </div>
+            </div>
+
+            {/* Waste Data Chart */}
+            <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e5e7eb', padding: '20px', marginBottom: '20px' }}>
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Waste Data Analysis</div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  {dateRange.startDate} to {dateRange.endDate}
+                </div>
+              </div>
+              <div style={{ height: '300px' }}>
+                <AnalyticsChart 
+                  analyticsData={analyticsData}
+                  chartType="line"
+                  dataType="waste"
+                  dateRange={dateRange}
+                />
+              </div>
+            </div>
+
+            {/* Environmental Impact Chart */}
+            <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e5e7eb', padding: '20px', marginBottom: '20px' }}>
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Environmental Impact Analysis</div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  {dateRange.startDate} to {dateRange.endDate}
+                </div>
+              </div>
+              <div style={{ height: '300px' }}>
+                <AnalyticsChart 
+                  analyticsData={analyticsData}
+                  chartType="line"
+                  dataType="environmental"
+                  dateRange={dateRange}
+                />
+              </div>
+            </div>
+
+            {/* Composition Charts */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              {/* Waste Composition */}
+              <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e5e7eb', padding: '20px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '15px' }}>Waste Composition Analysis</div>
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                    <span style={{ color: '#6b7280' }}>Wet Waste Container</span>
+                    <span style={{ fontWeight: 'bold', color: '#10b981' }}>{((totalOrganic / totalWeight) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: '#10b981', height: '10px', width: `${(totalOrganic / totalWeight) * 100}%` }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                    <span style={{ color: '#6b7280' }}>Dry Waste Container</span>
+                    <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{((totalInorganic / totalWeight) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: '#3b82f6', height: '10px', width: `${(totalInorganic / totalWeight) * 100}%` }}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Environmental Impact */}
+              <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e5e7eb', padding: '20px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '15px' }}>Environmental Impact Levels</div>
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                    <span style={{ color: '#6b7280' }}>Pollution Level</span>
+                    <span style={{ fontWeight: 'bold', color: avgPollution > 50 ? '#ef4444' : avgPollution > 30 ? '#eab308' : '#10b981' }}>
+                      {avgPollution.toFixed(1)}/100
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      backgroundColor: avgPollution > 50 ? '#ef4444' : avgPollution > 30 ? '#eab308' : '#10b981', 
+                      height: '10px', 
+                      width: `${Math.min(avgPollution, 100)}%` 
+                    }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                    <span style={{ color: '#6b7280' }}>Global Warming Impact</span>
+                    <span style={{ fontWeight: 'bold', color: avgGlobalWarming > 40 ? '#ef4444' : avgGlobalWarming > 25 ? '#f97316' : '#10b981' }}>
+                      {avgGlobalWarming.toFixed(1)}/100
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      backgroundColor: avgGlobalWarming > 40 ? '#ef4444' : avgGlobalWarming > 25 ? '#f97316' : '#10b981', 
+                      height: '10px', 
+                      width: `${Math.min(avgGlobalWarming, 100)}%` 
+                    }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
